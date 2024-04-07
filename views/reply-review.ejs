@@ -1,0 +1,133 @@
+<%- include ("layouts/header") %>
+
+    <input type="hidden" id="_id" value="<%= _id %>" />
+
+    <div style="display: contents;" id="replyOnReviewApp">
+        <div class="container" style="margin-top: 20px; margin-bottom: 20px;">
+            <div class="row" v-if="isLoading" style="padding: 25px;">
+                <div class="col-md-12" style="text-align: center;">
+                    <div class="spinner-border">
+                        <span class="sr-only">Loading...</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="offset-md-3 col-md-6">
+
+                    <template v-if="review != null">
+                        <h2>Title: "<span v-html="review.title"></span>"</h2>
+                        <h2>Review: "<span v-html="review.review"></span>"</h2>
+                    </template>
+
+                    <form style="margin-top: 50px;" v-on:submit.prevent="doReply">
+                        <div class="form-group">
+                            <label class="form-label">Write your reply</label>
+                            <textarea class="form-control" name="reply"></textarea>
+                        </div>
+
+                        <input type="submit" name="submit" v-bind:disabled="replying" v-bind:value="replying ? 'Replying...' : 'Reply'" class="btn btn-primary" />
+                    </form>
+
+                    <template v-if="review != null && review.replies.length > 0">
+                        <h3>Replies:</h3>
+
+                        <ol>
+                            <li v-for="reply of review.replies" v-html="reply.reply"></li>
+                        </ol>
+                    </template>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const _id = document.getElementById("_id").value
+
+        function initApp() {
+            Vue.createApp({
+
+                data() {
+                    return {
+                        isLoading: false,
+                        mainURL: mainURL,
+                        _id: _id,
+                        review: null,
+                        replying: false
+                    }
+                },
+
+                methods: {
+
+                    async doReply() {
+                        this.replying = true
+
+                        try {
+                            const form = event.target
+                            const formData = new FormData(form)
+                            formData.append("_id", _id)
+
+                            const response = await axios.post(
+                                mainURL + "/companies/reply-on-review",
+                                formData,
+                                {
+                                    headers: {
+                                        Authorization: "Bearer " + localStorage.getItem("accessToken")
+                                    }
+                                }
+                            )
+
+                            if (response.data.status == "success") {
+                                this.review.replies.unshift(response.data.reply)
+                            } else {
+                                swal.fire("Error", response.data.message, "error")
+                            }
+                        } catch (exp) {
+                            swal.fire("Error", exp.message, "error")
+                        } finally {
+                            this.replying = false
+                        }
+                    },
+                },
+
+                async mounted() {
+                    this.isLoading = true
+
+                    try {
+                        const formData = new FormData()
+                        formData.append("_id", _id)
+
+                        const response = await axios.post(
+                            mainURL + "/companies/fetchReview",
+                            formData,
+                            {
+                                headers: {
+                                    Authorization: "Bearer " + localStorage.getItem("accessToken")
+                                }
+                            }
+                        )
+
+                        if (response.data.status == "success") {
+                            this.review = response.data.review
+                        } else {
+                            swal.fire("Error", response.data.message, "error")
+                        }
+                    } catch (exp) {
+                        swal.fire("Error", exp.message, "error")
+                    } finally {
+                        this.isLoading = false
+                    }
+                },
+
+                watch: {
+                    user(to, from) {
+                        if (to != null) {
+                            this.profileImage = to.profileImage
+                        }
+                    }
+                }
+            }).mount("#replyOnReviewApp")
+        }
+    </script>
+
+<%- include ("layouts/footer") %>

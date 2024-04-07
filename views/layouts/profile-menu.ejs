@@ -1,0 +1,35 @@
+<ul class="list-group" id="left-menu-profile">
+	<li class="list-group-item">
+		<a href="<%= mainURL %>/profile">My Profile</a>	
+	</li>
+
+	<li class="list-group-item">
+		<a href="<%= mainURL %>/my-claimed">My Claimed</a>
+	</li>
+
+	<li class="list-group-item">
+		<a href="<%= mainURL %>/change-password">Change Password</a>
+	</li>
+</ul>
+
+<style>
+	.list-group-item.active a {
+		color: white;
+	}
+	.list-group-item a {
+		text-decoration: none;
+	}
+</style>
+
+<script>
+	const li = document.querySelectorAll("#left-menu-profile li")
+	for (let a = 0; a < li.length; a++) {
+		li[a].className = "list-group-item"
+
+		const anchor = li[a].querySelector("a")
+
+		if (anchor.getAttribute("href") == window.location.href) {
+			li[a].className = "list-group-item active"
+		}
+	}
+</script>

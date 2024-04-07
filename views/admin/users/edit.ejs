@@ -1,0 +1,188 @@
+<%- include ("../layouts/header") %>
+
+<div class="content">
+    <div class="container">
+        <div class="page-title">
+            <h3>Edit User</h3>
+        </div>
+
+        <div class="box box-primary">
+            <div class="box-body">
+                <form style="display: contents;" onsubmit="doSave()" id="form-edit">
+                    <div class="row" style="margin-top: 50px;">
+                        <div class="offset-md-3 col-md-6">
+                            <div class="form-group">
+                                <label class="form-label">Name</label>
+                                <input type="text" name="name" class="form-control" required />
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">Email</label>
+                                <input type="text" name="email" readonly class="form-control" />
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">Current subscription</label>
+                                <select name="type" class="form-control">
+                                    <option value="">Select subscription</option>
+                                    <option value="trial">Trial</option>
+                                    <option value="subscription">Subscription</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">Days</label>
+                                <input type="number" step="1" name="days" class="form-control" required />
+                            </div>
+
+                            <input type="submit" name="submit" class="btn btn-warning" value="Update user" />
+                        </div>
+                    </div>
+                </form>
+
+                <div class="row" style="margin-top: 30px; margin-bottom: 30px;">
+                    <div class="offset-md-3 col-md-6">
+                        <button type="button" class="btn btn-danger btn-sm" id="btn-ban" onclick="banUser()" style="display: none;">Ban</button>
+                        <button type="button" class="btn btn-success btn-sm" id="btn-unban" onclick="unbanUser()" style="display: none;">Unban</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<input type="hidden" id="_id" value="<%= _id %>" />
+
+<script>
+    const _id = document.getElementById("_id").value
+
+    async function unbanUser() {
+        const formData = new FormData()
+        formData.append("_id", _id)
+        formData.append("accessToken", localStorage.getItem("adminAccessToken"))
+        
+        document.getElementById("loader").style.display = ""
+        try {
+            const response = await axios.post(
+                "/admin/users/unban",
+                formData
+            )
+            
+            if (response.data.status == "success") {
+                swal("Success", response.data.message, response.data.status)
+
+                document.getElementById("btn-ban").style.display = ""
+                document.getElementById("btn-unban").style.display = "none"
+            } else {
+                swal("Error", response.data.message, response.data.status)
+            }
+        } catch (error) {
+            if (error?.response?.status == 401) {
+                swal("Error", error.response.data.message || "Unauthorized", "error")
+            }
+        } finally {
+            document.getElementById("loader").style.display = "none"
+        }
+    }
+
+    async function banUser() {
+        const formData = new FormData()
+        formData.append("_id", _id)
+        formData.append("accessToken", localStorage.getItem("adminAccessToken"))
+        
+        document.getElementById("loader").style.display = ""
+        try {
+            const response = await axios.post(
+                "/admin/users/ban",
+                formData
+            )
+            
+            if (response.data.status == "success") {
+                swal("Success", response.data.message, response.data.status)
+
+                document.getElementById("btn-ban").style.display = "none"
+                document.getElementById("btn-unban").style.display = ""
+            } else {
+                swal("Error", response.data.message, response.data.status)
+            }
+        } catch (error) {
+            if (error?.response?.status == 401) {
+                swal("Error", error.response.data.message || "Unauthorized", "error")
+            }
+        } finally {
+            document.getElementById("loader").style.display = "none"
+        }
+    }
+
+    async function doSave() {
+        event.preventDefault()
+        
+        const form = event.target
+        const formData = new FormData(form)
+        formData.append("_id", _id)
+        formData.append("accessToken", localStorage.getItem("adminAccessToken"))
+        
+        document.getElementById("loader").style.display = ""
+        try {
+            const response = await axios.post(
+                "/admin/users/update",
+                formData
+            )
+            
+            if (response.data.status == "success") {
+                swal("Success", response.data.message, response.data.status)
+            } else {
+                swal("Error", response.data.message, response.data.status)
+            }
+        } catch (error) {
+            if (error?.response?.status == 401) {
+                swal("Error", error.response.data.message || "Unauthorized", "error")
+            }
+        } finally {
+            document.getElementById("loader").style.display = "none"
+        }
+    }
+
+    async function onInit() {
+        const formData = new FormData()
+        formData.append("_id", _id)
+        formData.append("accessToken", localStorage.getItem("adminAccessToken"))
+        
+        document.getElementById("loader").style.display = ""
+        try {
+            const response = await axios.post(
+                "/admin/users/fetchSingle",
+                formData
+            )
+            
+            if (response.data.status == "success") {
+                const data = response.data.data
+                const form = document.getElementById("form-edit")
+
+                form.name.value = data.name
+                form.email.value = data.email
+                form.type.value = data.subscription?.type || ""
+                form.days.value = data.subscription?.days || 0
+
+                if (data.isBanned) {
+                    document.getElementById("btn-ban").style.display = "none"
+                    document.getElementById("btn-unban").style.display = ""
+                } else {
+                    document.getElementById("btn-ban").style.display = ""
+                    document.getElementById("btn-unban").style.display = "none"
+                }
+            } else {
+                swal("Error", response.data.message, response.data.status)
+            }
+        } catch (error) {
+            console.log(error)
+            if (error?.response?.status == 401) {
+                swal("Error", error.response.data.message || "Unauthorized", "error")
+            }
+        } finally {
+            document.getElementById("loader").style.display = "none"
+        }
+    }
+</script>
+
+<%- include ("../layouts/footer") %>

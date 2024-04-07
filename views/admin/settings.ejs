@@ -1,0 +1,225 @@
+<%- include ("layouts/header") %>
+
+<div class="content">
+    <div class="container">
+        <div class="page-title">
+            <h3>Settings</h3>
+        </div>
+
+        <div class="box box-primary">
+            <div class="box-body">
+            	<form onsubmit="saveSettings()">
+            		<ul class="nav nav-tabs" id="myTab" role="tablist">
+						<li class="nav-item">
+							<a class="nav-link active" id="smtp-tab" data-toggle="tab" href="#smtp" role="tab" aria-controls="smtp" aria-selected="true">SMTP</a>
+						</li>
+
+						<li class="nav-item">
+							<a class="nav-link" id="stripe-tab" data-toggle="tab" href="#stripe" role="tab" aria-controls="stripe" aria-selected="false">Stripe</a>
+						</li>
+
+						<li class="nav-item">
+							<a class="nav-link" id="subscriptions-tab" data-toggle="tab" href="#subscriptions" role="tab" aria-controls="subscriptions" aria-selected="false">Subscriptions</a>
+						</li>
+					</ul>
+
+					<div class="tab-content" id="myTabContent">
+						<div class="tab-pane fade show active" id="smtp" role="tabpanel" aria-labelledby="smtp-tab">
+
+							<iframe style="margin-bottom: 20px;" width="560" height="315" src="https://www.youtube.com/embed/MP-QGUaxAno?si=vxQkFG-bXkRZaWvH" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+
+							<div class="form-group">
+		            			<label>Host</label>
+		            			<input type="text" value="<%= settings?.smtp?.host %>" name="smtp_host" class="form-control" />
+		            		</div>
+
+		            		<div class="form-group">
+		            			<label>Port</label>
+		            			<input type="text" value="<%= settings?.smtp?.port %>" name="smtp_port" class="form-control" />
+		            		</div>
+
+		            		<div class="form-group">
+		            			<label>Email</label>
+		            			<input type="email" value="<%= settings?.smtp?.email %>" name="smtp_email" class="form-control" />
+		            		</div>
+
+		            		<div class="form-group">
+		            			<label>Password</label>
+		            			<input type="password" value="<%= settings?.smtp?.password %>" name="smtp_password" class="form-control" />
+		            		</div>
+						</div>
+
+						<div class="tab-pane fade" id="stripe" role="tabpanel" aria-labelledby="stripe-tab">
+							<p>
+								<a href="https://dashboard.stripe.com/test/apikeys" target="_blank">https://dashboard.stripe.com/test/apikeys</a>
+							</p>
+
+							<div class="form-group">
+		            			<label>Publishable key</label>
+		            			<input type="text" value="<%= settings?.stripe?.publishable_key %>" name="stripe_publishable_key" class="form-control" />
+		            		</div>
+
+		            		<div class="form-group">
+		            			<label>Secret key</label>
+		            			<input type="text" value="<%= settings?.stripe?.secret_key %>" name="stripe_secret_key" class="form-control" />
+		            		</div>
+						</div>
+
+						<div class="tab-pane fade" id="subscriptions" role="tabpanel" aria-labelledby="subscriptions-tab">
+							<div class="row">
+								<div class="col-md-12">
+									<table id="subscriptions-container" class="table table-bordered">
+										<thead>
+											<tr>
+												<th>Days</th>
+												<th>Amount</th>
+												<th>Actions</th>
+											</tr>
+										</thead>
+
+										<tbody>
+											<% (settings.subscriptions || []).forEach(function (subscription) { %>
+												<tr>
+													<td>
+														<div class="form-group">
+															<label>Select days</label>
+															<input type="number" min="0" name="days" class="form-control" value="<%= subscription.days %>" />
+														</div>
+													</td>
+
+													<td>
+														<div class="form-group">
+															<label>Enter amount</label>
+															<input type="number" min="0" name="amount" class="form-control" value="<%= subscription.amount %>" />
+														</div>
+													</td>
+
+													<td>
+														<div style="position: relative;
+														    top: 50%;
+														    transform: translateY(-30%);">
+															<button type="button" class="btn btn-danger btn-sm" onclick="deleteSubscriptionRow()">Delete</button>
+														</div>
+													</td>
+												</tr>
+											<% }) %>
+										</tbody>
+
+										<tfoot>
+											<tr>
+												<td colspan="3">
+													<button type="button" onclick="addSubscription()" class="btn btn-primary btn-sm">Add</button>
+												</td>
+											</tr>
+										</tfoot>
+									</table>
+								</div>
+							</div>
+						</div>
+					</div>
+
+					<button type="submit" name="submit" class="nav-link btn btn-primary btn-sm"
+						style="border-radius: 0px;
+						    position: relative;
+						    left: 98%;
+						    transform: translateX(-100%);">Save</button>
+            	</form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+
+	function addSubscription() {
+		let html = ""
+		html += `<tr>
+			<td>
+				<div class="form-group">
+					<label>Select days</label>
+					<input type="number" min="0" name="days" class="form-control" />
+				</div>
+			</td>
+
+			<td>
+				<div class="form-group">
+					<label>Enter amount</label>
+					<input type="number" min="0" name="amount" class="form-control" />
+				</div>
+			</td>
+
+			<td>
+				<div style="position: relative;
+				    top: 50%;
+				    transform: translateY(-30%);">
+					<button type="button" class="btn btn-danger btn-sm" onclick="deleteSubscriptionRow()">Delete</button>
+				</div>
+			</td>
+		</tr>`
+		
+		const row = document.querySelector("#subscriptions-container tbody").insertRow()
+		row.innerHTML = html
+	}
+
+	function deleteSubscriptionRow() {
+		const node = event.target
+		node.parentElement.parentElement.parentElement.remove()
+	}
+
+	function saveSettings() {
+		event.preventDefault()
+
+		const form = event.target
+		form.submit.innerHTML = "Loading...";
+        form.submit.setAttribute("disabled", "disabled");
+
+        var ajax = new XMLHttpRequest();
+        ajax.open("POST", "/admin/settings/save", true);
+
+        ajax.onreadystatechange = function () {
+            if (this.readyState == 4) {
+                if (this.status == 200) {
+                    // console.log(this.responseText);
+                    var response = JSON.parse(this.responseText);
+                    // console.log(response);
+
+                    form.submit.innerHTML = "Save";
+                    form.submit.removeAttribute("disabled");
+
+                    if (response.status == "success") {
+                        swal("Success", response.message, "success");
+                    } else {
+                        swal("Error", response.message, "error");
+                    }
+                }
+
+                if (this.status == 500) {
+                    console.log(this.responseText);
+                }
+            }
+        };
+
+        const subscriptionRows = document.querySelector("#subscriptions-container tbody").rows
+        const subscriptionData = []
+        for (let a = 0; a < subscriptionRows.length; a++) {
+        	const days = subscriptionRows[a].querySelector("input[name='days']").value
+        	const amount = subscriptionRows[a].querySelector("input[name='amount']").value
+        	
+        	subscriptionData.push({
+        		days: days,
+        		amount: amount
+        	})
+        }
+
+        var formData = new FormData(form);
+        formData.append("subscriptionData", JSON.stringify(subscriptionData))
+        formData.append("accessToken", localStorage.getItem("adminAccessToken"));
+        ajax.send(formData);
+	}
+
+	function onInit() {
+        document.getElementById("loader").style.display = "none"
+	}
+</script>
+
+<%- include ("layouts/footer") %>

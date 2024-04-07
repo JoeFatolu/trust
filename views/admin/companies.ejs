@@ -1,0 +1,152 @@
+<%- include ("layouts/header") %>
+
+<div class="content">
+    <div class="container">
+        <div class="page-title">
+            <h3>Companies</h3>
+        </div>
+        <div class="box box-primary">
+            <div class="box-body">
+
+                <form onsubmit="importCompanies()" enctype="multipart/form-data">
+                    <input type="file" name="file" id="import-files" accept="*.csv" />
+                    <button type="submit" name="submit" class="btn btn-sm btn-outline-primary">
+                        <i class="fas fa-upload"></i>
+                        Import
+                    </button>
+                </form>
+
+                <table width="100%" class="table table-bordered" id="dataTables-companies" style="margin-top: 50px;">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Domain</th>
+                            <th>Title</th>
+                            <th>Screenshot</th>
+                            <th>Ratings</th>
+                            <th>Reviews</th>
+                        </tr>
+                    </thead>
+
+                    <tbody></tbody>
+                </table>
+
+                <nav>
+                    <ul id="pagination" class="pagination"></ul>
+                </nav>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+
+    const urlSearchParams = new URLSearchParams(window.location.search)
+    let page = urlSearchParams.get("page") || 1
+
+    function importCompanies() {
+        event.preventDefault()
+
+        const form = event.target
+        form.submit.setAttribute("disabled", "disabled")
+
+        var ajax = new XMLHttpRequest();
+        ajax.open("POST", "/admin/importCompanies", true);
+
+        // document.getElementById("loader").style.display = ""
+
+        ajax.onreadystatechange = function () {
+            if (this.readyState == 4) {
+                if (this.status == 200) {
+                    form.submit.removeAttribute("disabled")
+                    
+                    // console.log(this.responseText);
+                    var response = JSON.parse(this.responseText);
+                    // console.log(response);
+                    document.getElementById("loader").style.display = "none"
+
+                    if (response.status == "success") {
+                        window.location.reload()
+                    } else {
+                        swal("Error", response.message, "error");
+                    }
+                }
+
+                if (this.status == 500) {
+                    console.log(this.responseText);
+                }
+            }
+        };
+
+        var formData = new FormData(form);
+        formData.append("accessToken", localStorage.getItem("adminAccessToken"));
+        ajax.send(formData);
+    }
+
+    function onInit() {
+        var ajax = new XMLHttpRequest();
+        ajax.open("POST", "/admin/fetchCompanies", true);
+        document.getElementById("loader").style.display = ""
+
+        ajax.onreadystatechange = function () {
+            if (this.readyState == 4) {
+                if (this.status == 200) {
+                    // console.log(this.responseText);
+                    var response = JSON.parse(this.responseText);
+                    // console.log(response);
+                    document.getElementById("loader").style.display = "none"
+
+                    if (response.status == "success") {
+                        var html = "";
+                        for (var a = 0; a < response.data.length; a++) {
+                            var d = response.data[a];
+
+                            html += `<tr>
+                                <td>` + d._id + `</td>
+                                <td>` + d.domain + `</td>
+                                <td>` + d.title + `</td>
+                                <td><img src='` + d.screenshot + `' class='img-fluid' onerror="this.src = '/public/img/user-placeholder.png';"
+                                    style="width: 50px;" /></td>
+                                <td>` + d.ratings + `</td>
+                                <td>` + d.reviews + `</td>
+                            </tr>`;
+                        }
+                        document.querySelector("#dataTables-companies tbody").innerHTML = html;
+
+                        var html = "";
+                        for (var a = 1; a <= response.totalPages; a++) {
+                            html += `<li class="page-item ` + (a == page ? "active" : "") + `">
+                                <a class="page-link" href="javascript:void(0);" onclick="paginate(` + a + `);">
+                                    ` + a + `
+                                </a>
+                            </li>`;
+                        }
+                        document.getElementById("pagination").innerHTML = html;
+                    } else {
+                        swal("Error", response.message, "error");
+                    }
+                }
+
+                if (this.status == 500) {
+                    console.log(this.responseText);
+                }
+            }
+        };
+
+        var formData = new FormData();
+        formData.append("accessToken", localStorage.getItem("adminAccessToken"));
+        formData.append("page", page)
+        ajax.send(formData);
+    }
+
+    function paginate() {
+        page++
+        onInit()
+    }
+
+    function deleteData(_id) {
+        // 
+    }
+</script>
+
+<%- include ("layouts/footer") %>

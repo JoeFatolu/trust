@@ -1,0 +1,161 @@
+<html>
+    <head>
+        <title>TrustPilot</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+        <link rel="stylesheet" href="/public/css/bootstrap.css" />
+        <link rel="stylesheet" href="/public/css/font-awesome.css" />
+        <link rel="stylesheet" href="/public/css/style.css?v=<%= new Date().getTime() %>" />
+
+        <!-- <script src="/public/js/jquery.js"></script> -->
+        <script src="/public/js/popper.min.js"></script>
+		<script src="/public/js/bootstrap.js"></script>
+
+		<script src="/public/js/axios.min.js"></script>
+		<script src="/public/js/sweetalert2@11.js"></script>
+		<!-- <script src="/public/js/all.js"></script> -->
+        <script src="/public/js/vue.global.js"></script>
+    	<!-- <script src="/public/js/vue.global.prod.js"></script> -->
+
+        <!-- <link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css" /> -->
+        <!-- <script src="https://code.jquery.com/jquery-3.6.0.js"></script> -->
+        <!-- <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.js"></script> -->
+
+        <!-- <link rel="stylesheet" href="/public/datetimepicker/jquery.datetimepicker.min.css" /> -->
+        <!-- <script src="/public/datetimepicker/jquery.datetimepicker.full.js"></script> -->
+
+        <!-- <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery-datetimepicker/2.5.20/jquery.datetimepicker.css" /> -->
+        <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-datetimepicker/2.5.20/jquery.datetimepicker.full.min.js"></script> -->
+
+        <script src="/public/js/script.js?v=<%= new Date().getTime() %>"></script>
+    </head>
+
+    <body>
+
+        <input type="hidden" id="mainURL" value="<%= mainURL %>" />
+        <script>
+          window.user = null
+          const mainURL = document.getElementById("mainURL").value
+        </script>
+
+        <nav class="navbar navbar-expand-lg navbar-light navbar-inverse" id="headerApp">
+          <div class="container-fluid">
+            <a class="navbar-brand" href="<%= mainURL %>">TrustPilot</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation"
+                style="background-color: white;">
+              <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarSupportedContent">
+              <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                <li class="nav-item" v-if="user == null">
+                    <a v-bind:class="'nav-link' + (path == '/login' ? ' active' : '')" href="/login">Login</a>
+                  </li>
+        
+                  <li class="nav-item" v-if="user == null">
+                    <a v-bind:class="'nav-link' + (path == '/register' ? ' active' : '')" href="/register">Register</a>
+                  </li>
+
+                  <li class="nav-item">
+                      <ul>
+                          <li class="nav-item dropdown" v-if="user != null">
+                            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <img v-bind:src="user.profileImage ?? ''" style="width: 40px; height: 40px;
+                                    object-fit: cover; border-radius: 50%; margin-right: 10px;"
+                                    onerror="this.src = '/public/img/user-placeholder.png'" />
+
+                                <span v-text="user.name"></span>
+                            </a>
+                            <ul class="dropdown-menu">
+                              <li><a class="dropdown-item" href="/profile">Profile</a></li>
+                              <li><a class="dropdown-item" v-on:click="doLogout" href="javascript:void(0);">Logout</a></li>
+                            </ul>
+                          </li>
+                      </ul>
+                  </li>
+                  
+                    
+              </ul>
+            </div>
+          </div>
+        </nav>
+
+        <script>
+            function initHeaderApp() {
+                Vue.createApp({
+
+                    data() {
+                      return {
+                        user: window.user,
+                        path: window.location.href
+                      }
+                    },
+
+                    methods: {
+
+                      async doLogout () {
+                            const response = await axios.post(
+                                mainURL + "/logout",
+                                null,
+                                {
+                                  headers: {
+                                    Authorization: "Bearer: " + localStorage.getItem("accessToken")
+                                  }
+                                }
+                            )
+
+                            if (response.data.status == "success") {
+                                // remove access token from local storage
+                                localStorage.removeItem("accessToken")
+                                // window.location.href = "/login"
+                                window.location.reload()
+                            } else {
+                                swal.fire("Error", response.data.message, "error")
+                            }
+                        }
+                    },
+                }).mount("#headerApp")
+            }
+        </script>
+
+        <style>
+            @media only screen and (max-width: 767px) {
+                .margin-top-mobile-20 {
+                    margin-top: 20px;
+                }
+                .margin-top-mobile {
+                    margin-top: 50px;
+                }
+            }
+            .dropdown-toggle:hover {
+                text-decoration: none !important;
+            }
+            #headerApp .nav-link,
+            #headerApp .navbar-brand {
+                color: white !important;
+            }
+            /* for mobile */
+            @media only screen and (max-width: 767px) {
+                #navbarSupportedContent ul {
+                    margin-left: auto !important;
+                }
+            }
+            /* for desktop */
+            @media only screen and (min-width: 768px) {
+                #headerApp {
+                    padding-left: 150px;
+                    padding-right: 150px;
+                }
+            }
+            #headerApp {
+                background-color: #1c1c1c !important;
+                border-radius: 0px;
+                margin-bottom: 0px;
+            }
+            html, body { overflow-x: hidden; }
+            /*.container {
+                padding-left: 100px !important;
+                padding-right: 100px !important;
+                margin-left: 0px !important;
+                margin-right: 0px !important;
+            }*/
+        </style>

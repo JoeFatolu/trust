@@ -1,0 +1,161 @@
+<%- include ("layouts/header") %>
+
+    <input type="hidden" id="publishableKey" value="<%= publishableKey %>" />
+
+    <div style="padding-top: 50px; padding-bottom: 50px; background-color: #fcfbf3;" id="subscribeApp">
+        <div class="container">
+            <div class="row" v-if="isLoading" style="padding: 25px;">
+                <div class="col-md-12" style="text-align: center;">
+                    <div class="spinner-border">
+                        <span class="sr-only">Loading...</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="offset-md-3 col-md-6">
+                    <form v-on:submit.prevent="doSubscribe" style="display: contents;">
+                        <div class="card">
+                            <div class="card-body">
+                                <div class="form-group">
+                                    <label>Select period</label>
+                                    <select name="days" class="form-control" required>
+                                        <% subscriptions.forEach(function (subscription) { %>
+                                            <option value="<%= subscription.days %>"><%= subscription.days %> days ($<%= subscription.amount %>)</option>
+                                        <% }) %>
+                                    </select>
+                                </div>
+
+                                <div id="stripe-card-element" style="margin-top: 30px; margin-bottom: 20px;"></div>
+                            </div>
+
+                            <div class="card-footer">
+                                <input type="submit" name="submit" class="btn btn-primary btn-sm" value="Subscribe" v-bind:disabled="subscribing" />
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function initApp() {
+            Vue.createApp({
+
+                data() {
+                    return {
+                        isLoading: false,
+                        profileImage: "",
+                        user: null,
+                        mainURL: mainURL,
+                        subscribing: false,
+                        stripe: null,
+                        cardElement: null
+                    }
+                },
+
+                methods: {
+                    async doSubscribe() {
+                        const self = this
+                        this.subscribing = true
+                        try {
+                            const form = event.target
+                            const formData = new FormData(form)
+                            let response = await axios.post(
+                                mainURL + "/createStripeIntent",
+                                formData,
+                                {
+                                    headers: {
+                                        "Authorization": "Bearer " + localStorage.getItem("accessToken") 
+                                    }
+                                }
+                            )
+
+                            if (response.data.status == "success") {
+                                const clientSecret = response.data.clientSecret
+
+                                // execute the payment
+                                this.stripe
+                                    .confirmCardPayment(clientSecret, {
+                                        payment_method: {
+                                                card: this.cardElement,
+                                                billing_details: {
+                                                    name: user.name,
+                                                    email: user.email
+                                                },
+                                            },
+                                        })
+                                        .then(async function(result) {
+                             
+                                            // Handle result.error or result.paymentIntent
+                                            if (result.error) {
+                                                console.log(result.error)
+                                                
+                                                swal.fire("Error", result.error, "error")
+                                                self.subscribing = false
+                                            } else {
+                                                console.log("The card has been verified successfully...", result.paymentIntent.id)
+
+                                                try {
+                                                    const formData2 = new FormData()
+                                                    formData2.append("paymentId", result.paymentIntent.id)
+                                                    formData2.append("days", form.days.value)
+
+                                                    let response2 = await axios.post(
+                                                        mainURL + "/doSubscribe",
+                                                        formData2,
+                                                        {
+                                                            headers: {
+                                                                "Authorization": "Bearer " + localStorage.getItem("accessToken") 
+                                                            }
+                                                        }
+                                                    )
+
+                                                    if (response2.data.status == "success") {
+                                                        swal.fire("Subscribe", response2.data.message, "success")
+                                                        self.subscribing = false
+                                                    } else {
+                                                        swal.fire("Error", response2.data.message, "error")
+                                                        self.subscribing = false
+                                                    }
+                                                } catch (exp) {
+                                                    swal.fire("Error", exp.message, "error")
+                                                    self.subscribing = false
+                                                }
+                                            }
+                                        })
+                            } else {
+                                swal.fire("Error", response.data.message, "error")
+                                this.subscribing = false
+                            }
+                        } catch (exp) {
+                            swal.fire("Error", exp.message, "error")
+                            this.subscribing = false
+                        }
+                    },
+                },
+
+                mounted() {
+                    const publishableKey = document.getElementById("publishableKey").value
+
+                    this.stripe = Stripe(publishableKey)
+                    const elements = this.stripe.elements()
+                    this.cardElement = elements.create('card')
+                    this.cardElement.mount('#stripe-card-element')
+                },
+
+                watch: {
+                    user(to, from) {
+                        if (to != null) {
+                            this.profileImage = to.profileImage
+                        }
+                    }
+                }
+            }).mount("#subscribeApp")
+        }
+    </script>
+
+    <script src="https://js.stripe.com/v3/"></script>
+
+<%- include ("layouts/footer") %>

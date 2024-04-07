@@ -1,0 +1,91 @@
+<%- include ("layouts/header") %>
+
+<div class="content">
+    <div class="container">
+        <div class="page-title">
+            <h3>Flags</h3>
+        </div>
+        <div class="box box-primary">
+            <div class="box-body">
+                <table class="table table-bordered" id="dataTables-flags">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Review</th>
+                            <th>Company</th>
+                            <th>User</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+
+                <nav>
+                    <ul id="pagination" class="pagination"></ul>
+                </nav>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function onInit() {
+        var ajax = new XMLHttpRequest();
+        ajax.open("POST", "/admin/fetchFlaggedReviews", true);
+        document.getElementById("loader").style.display = ""
+
+        ajax.onreadystatechange = function () {
+            if (this.readyState == 4) {
+                if (this.status == 200) {
+                    // console.log(this.responseText);
+                    var response = JSON.parse(this.responseText);
+                    // console.log(response);
+                    document.getElementById("loader").style.display = "none"
+
+                    if (response.status == "success") {
+                        var html = "";
+                        for (var a = 0; a < response.data.length; a++) {
+                            var data = response.data[a]
+
+                            html += `<tr>
+                                <td>` + data._id + `</td>
+                                <td>
+                                    <h4>` + data.title + `</h4>
+                                    <p>` + data.review + `</p>
+                                </td>
+                                <td>
+                                    <a href="/company/` + data.company.domain + `">` + data.company.domain + `</a>
+                                </td>
+                                <td>
+                                    <a href="/admin/users/edit/` + data.user._id + `">` + data.user.name + `</a>
+                                </td>
+                            </tr>`;
+                        }
+                        document.querySelector("#dataTables-flags tbody").innerHTML = html;
+
+                        var html = "";
+                        for (var a = 1; a <= response.totalPages; a++) {
+                            html += `<li class="page-item ` + (a == currentPage ? "active" : "") + `">
+                                <a class="page-link" href="javascript:void(0);" onclick="getUsers(` + a + `);">
+                                    ` + (a + 1) + `
+                                </a>
+                            </li>`;
+                        }
+                        document.getElementById("pagination").innerHTML = html;
+                    } else {
+                        swal("Error", response.message, "error");
+                    }
+                }
+
+                if (this.status == 500) {
+                    console.log(this.responseText);
+                }
+            }
+        };
+
+        var formData = new FormData()
+        formData.append("accessToken", localStorage.getItem("adminAccessToken"))
+        ajax.send(formData)
+    }
+</script>
+
+<%- include ("layouts/footer") %>
